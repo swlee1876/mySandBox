@@ -52,7 +52,7 @@ int main(int argc , char *argv[])
     dest_port = atoi(argv[argcPos + 2]);
     filename = argv[argcPos + 3];
     isRendezvous = (atoi(argv[argcPos + 4]) == 1)?true:false;
-    isServer = (atoi(argv[argcPos = 5]) == 1)?true:false;
+    isServer = (atoi(argv[argcPos + 5]) == 1)?true:false;
 
     if (!isServer) {
         nRet = readData(filename, buffer);
