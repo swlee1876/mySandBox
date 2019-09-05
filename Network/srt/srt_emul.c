@@ -264,7 +264,7 @@ int createEPoll(SRTSOCKET sock)
 }
 
 int emulAction(char *src_addr, int src_port, char *dest_addr, int dest_port, 
-        char *buffer, char nLength, bool isRendezvous, bool isServer) 
+        char *buffer, int nLength, bool isRendezvous, bool isServer) 
 {
     char *pbuffer;
     int nRet = 0, pos = 0, snd_size = 1316;
