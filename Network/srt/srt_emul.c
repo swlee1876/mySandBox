@@ -343,7 +343,7 @@ int emulAction(char *src_addr, int src_port, char *dest_addr, int dest_port,
 
     int currentTime = getCurrentTime();
 
-    logPrn("[TimeChekc]Receive Size : %d" , currentTime - startTime);
+    logPrn("[TimeCheck]Receive Size : %d" , currentTime - startTime);
 
     startTime = currentTime;
 
@@ -380,7 +380,7 @@ int emulAction(char *src_addr, int src_port, char *dest_addr, int dest_port,
 
     currentTime = getCurrentTime();
 
-    logPrn("[TimeChekc]Receive Data : %d" , currentTime - startTime);
+    logPrn("[TimeCheck]Receive Data : %d\n" , currentTime - startTime);
 
     /// send the size
     totalSize = pos;
