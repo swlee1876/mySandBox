@@ -63,8 +63,9 @@ int main(int argc , char *argv[])
     }
 
     cnt = 0;
+    totalSize = nRet;
     while(cnt < 10) {
-        nRet = emulAction(src_addr, src_port, dest_addr, dest_port, buffer, nRet, isRendezvous, isServer);
+        nRet = emulAction(src_addr, src_port, dest_addr, dest_port, buffer, totalSize, isRendezvous, isServer);
         if (nRet == -1) 
             break;
         cnt++;
