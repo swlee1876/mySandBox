@@ -18,7 +18,7 @@ void logPrn(const char *format, ... );
 int readData(char* filename, char* buffer);
 SRTSOCKET connectSRT(char *src_addr, int src_port, char *dest_addr, int dest_port, bool isRendezvous, bool isServer);
 int createEPoll(SRTSOCKET sock);
-int emulAction(char *src_addr, int src_port, char *dest_addr, int dest_port, char *buffer, bool isRendezvous, bool isServer);
+int emulAction(char *src_addr, int src_port, char *dest_addr, int dest_port, char *buffer, int nLength, bool isRendezvous, bool isServer);
 
 int main(int argc , char *argv[]) 
 {
@@ -62,7 +62,7 @@ int main(int argc , char *argv[])
         }
     }
 
-    nRet = emulAction(src_addr, src_port, dest_addr, dest_port, buffer, isRendezvous, isServer);
+    nRet = emulAction(src_addr, src_port, dest_addr, dest_port, buffer, nRet, isRendezvous, isServer);
 
     srt_cleanup(); 
 	return 0;
@@ -264,7 +264,7 @@ int createEPoll(SRTSOCKET sock)
 }
 
 int emulAction(char *src_addr, int src_port, char *dest_addr, int dest_port, 
-        char *buffer, bool isRendezvous, bool isServer) 
+        char *buffer, char nLength, bool isRendezvous, bool isServer) 
 {
     char *pbuffer;
     int nRet = 0, pos = 0, snd_size = 1316;
@@ -286,8 +286,8 @@ int emulAction(char *src_addr, int src_port, char *dest_addr, int dest_port,
 
     if (!isServer) {
         /// send the size
-        srt_sendmsg(sock, (char *)&nRet , sizeof(nRet) , -1, 1);
-        printf("Send size : %d\n", nRet);
+        srt_sendmsg(sock, (char *)&nLength , sizeof(nLength) , -1, 1);
+        printf("Send size : %d\n", nLength);
 
         /// send the data
 #if 0
@@ -300,7 +300,7 @@ int emulAction(char *src_addr, int src_port, char *dest_addr, int dest_port,
             pos += snd_size;
         }
 #else
-        srt_sendmsg(sock , buffer, nRet, -1 , 1);
+        srt_sendmsg(sock , buffer, nLength, -1 , 1);
 #endif
 
     }
