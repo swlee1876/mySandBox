@@ -192,6 +192,8 @@ SRTSOCKET connectSRT(char *src_addr, int src_port, char *dest_addr, int dest_por
             return SRT_ERROR;
         }
 
+        srt_close(sock);
+
         return clisock;
 
     }
