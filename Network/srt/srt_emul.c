@@ -227,6 +227,17 @@ SRTSOCKET connectSRT(char *src_addr, int src_port, char *dest_addr, int dest_por
         }
     }
 
+    int nLength = 10;
+    srt_sendmsg(sock, (char *)&nLength , sizeof(nLength) , -1, 1);
+    nRet = srt_recvmsg(sock, (char *)&nLength, sizeof(nLength));
+    if (nRet == SRT_ERROR) {
+        int srt_errno = srt_getlasterror(NULL);
+        fprintf(stderr, "Failed : srt_connect (SRT) [%d][%s]", srt_errno, srt_getlasterror_str());
+        srt_close(sock);
+        srt_cleanup(); 
+    }
+    logPrn("fisrt negotiation end");
+
     return sock;
 
 }
