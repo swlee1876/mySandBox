@@ -63,11 +63,12 @@ int main(int argc , char *argv[])
     }
 
     cnt = 0;
-    while(cnt < 100) {
+    while(cnt < 10) {
         nRet = emulAction(src_addr, src_port, dest_addr, dest_port, buffer, nRet, isRendezvous, isServer);
         if (nRet == -1) 
             break;
         cnt++;
+        sleep(2);
     }
 
     srt_cleanup(); 
