@@ -15,7 +15,7 @@
 char* get_datestr(char* strDate);
 char* get_timestr(char* strTime);
 void logPrn(const char *format, ... );
-SRTSOCKET connectSRT(char *src_addr, int src_port, char *dest_addr, int dest_port, bool rendezvous);
+SRTSOCKET connectSRT(char *src_addr, int src_port, char *dest_addr, int dest_port, bool isRendezvous, bool isServer);
 int createEPoll(SRTSOCKET sock);
 
 int main(int argc , char *argv[]) 
@@ -50,7 +50,7 @@ int main(int argc , char *argv[])
         filename = argv[4];
     }
 
-    sock = connectSRT(src_addr, src_port, dest_addr, dest_port, true);
+    sock = connectSRT(src_addr, src_port, dest_addr, dest_port, true, true);
     if (sock == SRT_ERROR) {
         return -1;
     }
@@ -202,18 +202,20 @@ char* get_timestr(char* strTime)
     return strTime;
 }
 
-SRTSOCKET connectSRT(char *src_addr, int src_port, char *dest_addr, int dest_port, bool rendezvous)
+SRTSOCKET connectSRT(char *src_addr, int src_port, char *dest_addr, int dest_port, bool isRendezvous, bool isServer)
 {
     int file_mode = SRTT_FILE;
     int yes = 1;
+    SRTSOCKET sock, clisock;
 
     /// open and set option for srt socket
-    SRTSOCKET sock = srt_socket(AF_INET, SOCK_DGRAM, 0);
+    sock = srt_socket(AF_INET, SOCK_DGRAM, 0);
 
     srt_setsockflag(sock, SRTO_TRANSTYPE, &file_mode, sizeof(file_mode));
     //srt_setsockflag(sock, SRTO_MESSAGEAPI, &yes, sizeof(yes));
 
-    srt_setsockopt(sock, 0, SRTO_RENDEZVOUS, &yes, sizeof(yes));
+    if (isRendezvous) 
+        srt_setsockopt(sock, 0, SRTO_RENDEZVOUS, &yes, sizeof(yes));
 
     /// set source ip and port
 	struct sockaddr_in	this_sin;
@@ -236,33 +238,57 @@ SRTSOCKET connectSRT(char *src_addr, int src_port, char *dest_addr, int dest_por
         return SRT_ERROR;
     }
 
-    /// set destination ip and port
-    memset(&this_sin , 0x00, sizeof(this_sin));
-    this_sin.sin_family         = AF_INET;
-    this_sin.sin_port           = htons(dest_port);
-    this_sin.sin_addr.s_addr    = inet_addr(dest_addr);
+    if (!isRendezvous && isServer) {
+        nRet = srt_listen(sock , 5);
+        if (nRet == SRT_ERROR) {
+            int srt_errno = srt_getlasterror(NULL);
+            printf("Failed : srt_listen [%d][%s]", srt_errno, srt_getlasterror_str());
+            srt_close(sock);
+            srt_cleanup(); 
+            return SRT_ERROR;
+        }
+        memset(&this_sin , 0x00, sizeof(this_sin));
+        int nLength;
+        clisock = srt_accept(sock , (struct sockaddr *)&this_sin, &nLength); 
+        if (clisock == SRT_INVALID_SOCK) {
+            int srt_errno = srt_getlasterror(NULL);
+            printf("Failed : srt_accept [%d][%s]", srt_errno, srt_getlasterror_str());
+            srt_close(sock);
+            srt_cleanup(); 
+            return SRT_ERROR;
+        }
 
-	int dwTimeOut = 10000;
+        return clisock;
 
-    /// connect
-	if(srt_setsockopt(sock, 0, SRTO_CONNTIMEO, &dwTimeOut, sizeof(dwTimeOut)) == SRT_ERROR)
-    {
-        int srt_errno = srt_getlasterror(NULL);
-        printf("Failed : srt_setsockopt, timeout (SRT) [%d][%s]", srt_errno, srt_getlasterror_str());
-        srt_close(sock);
-        srt_cleanup(); 
-        return  SRT_ERROR;
     }
+    else {
+        /// set destination ip and port
+        this_sin.sin_family         = AF_INET;
+        this_sin.sin_port           = htons(dest_port);
+        this_sin.sin_addr.s_addr    = inet_addr(dest_addr);
 
-    logPrn("try connection");
+        int dwTimeOut = 10000;
 
-    nRet = srt_connect(sock, (struct sockaddr*)&this_sin, sizeof(this_sin));
-    if(nRet == SRT_ERROR) {
-        int srt_errno = srt_getlasterror(NULL);
-        printf("Failed : srt_connect (SRT) [%d][%s]", srt_errno, srt_getlasterror_str());
-        srt_close(sock);
-        srt_cleanup(); 
-	    return	SRT_ERROR;
+        /// connect
+        if(srt_setsockopt(sock, 0, SRTO_CONNTIMEO, &dwTimeOut, sizeof(dwTimeOut)) == SRT_ERROR)
+        {
+            int srt_errno = srt_getlasterror(NULL);
+            printf("Failed : srt_setsockopt, timeout (SRT) [%d][%s]", srt_errno, srt_getlasterror_str());
+            srt_close(sock);
+            srt_cleanup(); 
+            return  SRT_ERROR;
+        }
+
+        logPrn("try connection");
+
+        nRet = srt_connect(sock, (struct sockaddr*)&this_sin, sizeof(this_sin));
+        if(nRet == SRT_ERROR) {
+            int srt_errno = srt_getlasterror(NULL);
+            printf("Failed : srt_connect (SRT) [%d][%s]", srt_errno, srt_getlasterror_str());
+            srt_close(sock);
+            srt_cleanup(); 
+            return	SRT_ERROR;
+        }
     }
 
     return sock;
