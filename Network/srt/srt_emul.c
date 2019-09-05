@@ -31,7 +31,7 @@ int main(int argc , char *argv[])
     UDT::setloglevel(srt_logging::LogLevel::debug);
     UDT::addlogfa(10);
 
-    if (argc != 5 && argc != 6) {
+    if (argc != 7 && argc != 8) {
         printf("%s [src_ip] src_port dest_ip dest_port recv_file mode role\n" \
                "mode : rendezvous mode (1), normal mode (0)\n" \
                "role : server (1), client (0)\n" , argv[0]);
@@ -39,7 +39,7 @@ int main(int argc , char *argv[])
     }
 
     /// set argument
-    if (argc == 6) {
+    if (argc == 8) {
         argcPos = 2;
         src_addr = argv[1];
     }
