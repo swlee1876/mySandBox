@@ -34,7 +34,7 @@ int main(int argc , char *argv[])
     UDT::addlogfa(10);
 
     if (argc != 7 && argc != 8) {
-        printf("%s [src_ip] src_port dest_ip dest_port recv_file mode role\n" \
+        fprintf(stderr, "%s [src_ip] src_port dest_ip dest_port recv_file mode role\n" \
                "mode : rendezvous mode (1), normal mode (0)\n" \
                "role : server (1), client (0)\n" , argv[0]);
         return -1;
@@ -62,7 +62,13 @@ int main(int argc , char *argv[])
         }
     }
 
-    nRet = emulAction(src_addr, src_port, dest_addr, dest_port, buffer, nRet, isRendezvous, isServer);
+    cnt = 0;
+    while(cnt < 100) {
+        nRet = emulAction(src_addr, src_port, dest_addr, dest_port, buffer, nRet, isRendezvous, isServer);
+        if (nRet == -1) 
+            break;
+        cnt++;
+    }
 
     srt_cleanup(); 
 	return 0;
@@ -100,7 +106,7 @@ void logPrn(const char *format, ... )
 					get_datestr(szTmpBufferDate),
 					get_timestr(szTmpBufferTime));	 
 
-	printf("%s %s\n" , szTimeBuffer, szBuffer);
+	fprintf(stdout, "%s %s\n" , szTimeBuffer, szBuffer);
 }
 
 
@@ -126,7 +132,7 @@ SRTSOCKET connectSRT(char *src_addr, int src_port, char *dest_addr, int dest_por
     int yes = 1;
     SRTSOCKET sock, clisock;
 
-    printf("connecting [%s:%s] mode\n" ,
+    fprintf(stderr, "connecting [%s:%s] mode\n" ,
             isRendezvous?"rendezvous":"normal", isServer?"server":"client");
 
     /// open and set option for srt socket
@@ -137,6 +143,10 @@ SRTSOCKET connectSRT(char *src_addr, int src_port, char *dest_addr, int dest_por
 
     if (isRendezvous) 
         srt_setsockopt(sock, 0, SRTO_RENDEZVOUS, &yes, sizeof(yes));
+
+    struct linger zero;
+    memset((char *)&zero, 0x00, sizeof(zero));
+    srt_setsockopt(sock, 0, SRTO_LINGER, &zero, sizeof(zero));
 
     /// set source ip and port
 	struct sockaddr_in	this_sin;
@@ -153,7 +163,7 @@ SRTSOCKET connectSRT(char *src_addr, int src_port, char *dest_addr, int dest_por
 
 	if(nRet == SRT_ERROR ) {
         int srt_errno = srt_getlasterror(NULL);
-        printf("Failed : srt_bind [%d][%s]", srt_errno, srt_getlasterror_str());
+        fprintf(stderr, "Failed : srt_bind [%d][%s]", srt_errno, srt_getlasterror_str());
         srt_close(sock);
         srt_cleanup(); 
         return SRT_ERROR;
@@ -163,7 +173,7 @@ SRTSOCKET connectSRT(char *src_addr, int src_port, char *dest_addr, int dest_por
         nRet = srt_listen(sock , 5);
         if (nRet == SRT_ERROR) {
             int srt_errno = srt_getlasterror(NULL);
-            printf("Failed : srt_listen [%d][%s]", srt_errno, srt_getlasterror_str());
+            fprintf(stderr, "Failed : srt_listen [%d][%s]", srt_errno, srt_getlasterror_str());
             srt_close(sock);
             srt_cleanup(); 
             return SRT_ERROR;
@@ -173,7 +183,7 @@ SRTSOCKET connectSRT(char *src_addr, int src_port, char *dest_addr, int dest_por
         clisock = srt_accept(sock , (struct sockaddr *)&this_sin, &nLength); 
         if (clisock == SRT_INVALID_SOCK) {
             int srt_errno = srt_getlasterror(NULL);
-            printf("Failed : srt_accept [%d][%s]", srt_errno, srt_getlasterror_str());
+            fprintf(stderr, "Failed : srt_accept [%d][%s]", srt_errno, srt_getlasterror_str());
             srt_close(sock);
             srt_cleanup(); 
             return SRT_ERROR;
@@ -194,7 +204,7 @@ SRTSOCKET connectSRT(char *src_addr, int src_port, char *dest_addr, int dest_por
         if(srt_setsockopt(sock, 0, SRTO_CONNTIMEO, &dwTimeOut, sizeof(dwTimeOut)) == SRT_ERROR)
         {
             int srt_errno = srt_getlasterror(NULL);
-            printf("Failed : srt_setsockopt, timeout (SRT) [%d][%s]", srt_errno, srt_getlasterror_str());
+            fprintf(stderr, "Failed : srt_setsockopt, timeout (SRT) [%d][%s]", srt_errno, srt_getlasterror_str());
             srt_close(sock);
             srt_cleanup(); 
             return  SRT_ERROR;
@@ -205,7 +215,7 @@ SRTSOCKET connectSRT(char *src_addr, int src_port, char *dest_addr, int dest_por
         nRet = srt_connect(sock, (struct sockaddr*)&this_sin, sizeof(this_sin));
         if(nRet == SRT_ERROR) {
             int srt_errno = srt_getlasterror(NULL);
-            printf("Failed : srt_connect (SRT) [%d][%s]", srt_errno, srt_getlasterror_str());
+            fprintf(stderr, "Failed : srt_connect (SRT) [%d][%s]", srt_errno, srt_getlasterror_str());
             srt_close(sock);
             srt_cleanup(); 
             return	SRT_ERROR;
@@ -222,14 +232,14 @@ int readData(char* filename, char* buffer)
     int fd = open(filename , O_RDONLY , 0);
 
     if (fd < 0) {
-        printf("can't open %s\n", filename);
+        fprintf(stderr, "can't open %s\n", filename);
         return -1;
     }
 
     nRet = read(fd, buffer, BUFFER_SIZE);
 
     if (nRet <= 0) {
-        printf("can't read file(%s)\n" , filename);
+        fprintf(stderr, "can't read file(%s)\n" , filename);
         close(fd);
         return -1;
     }
@@ -247,7 +257,7 @@ int createEPoll(SRTSOCKET sock)
     pollid = srt_epoll_create();
 
     if (pollid < 0) {
-        printf("can't create srt epoll : [%d][%s]\n",
+        fprintf(stderr, "can't create srt epoll : [%d][%s]\n",
                 srt_getlasterror(NULL), srt_getlasterror_str());
         return SRT_ERROR;
     }
@@ -255,7 +265,7 @@ int createEPoll(SRTSOCKET sock)
     int events = SRT_EPOLL_IN | SRT_EPOLL_ERR;
 
     if (srt_epoll_add_usock(pollid, sock, &events)) {
-        printf("failed to add srt destination to poll : [%d][%s]\n", 
+        fprintf(stderr, "failed to add srt destination to poll : [%d][%s]\n", 
             srt_getlasterror(NULL), srt_getlasterror_str());
         return SRT_ERROR;
     }
@@ -287,7 +297,7 @@ int emulAction(char *src_addr, int src_port, char *dest_addr, int dest_port,
     if (!isServer) {
         /// send the size
         srt_sendmsg(sock, (char *)&nLength , sizeof(nLength) , -1, 1);
-        printf("Send size : %d\n", nLength);
+        fprintf(stderr, "Send size : %d\n", nLength);
 
         /// send the data
 #if 0
@@ -308,7 +318,12 @@ int emulAction(char *src_addr, int src_port, char *dest_addr, int dest_port,
     logPrn("Receiving size : %d\n" , totalSize);
     /// receive the size 
     while (srt_epoll_wait(pollid, &rfd , &rfdlen, 0, 0, 100, 0, 0, 0, 0) < 0) {
-        printf("first step : srt_epoll_wiat timeout (%d)\n" , cnt);
+        fprintf(stderr, "first step : srt_epoll_wiat timeout (%d)\n" , cnt);
+        if (isServer) {
+            logPrn("Pick slow connection and close socket\n");
+            srt_close(sock);
+            return -2;
+        }
         continue;
     }
     
@@ -316,7 +331,7 @@ int emulAction(char *src_addr, int src_port, char *dest_addr, int dest_port,
     nRet = srt_recvmsg(sock, (char *)&totalSize , sizeof(totalSize));
 
     if (nRet == SRT_ERROR) {
-        printf("failed to receive : [%d][%s]\n", srt_getlasterror(NULL), srt_getlasterror_str());
+        fprintf(stderr, "failed to receive : [%d][%s]\n", srt_getlasterror(NULL), srt_getlasterror_str());
         srt_close(sock);
         srt_cleanup(); 
         return -1;
@@ -330,7 +345,7 @@ int emulAction(char *src_addr, int src_port, char *dest_addr, int dest_port,
     /// receive the data
     while((totalSize > 0) && (cnt < 50)) {
         if (srt_epoll_wait(pollid, &rfd , &rfdlen, 0, 0, READ_TIMEOUT, 0, 0, 0, 0) < 0) {
-            printf("srt_epoll_wiat timeout (%d)\n" , cnt);
+            fprintf(stderr, "srt_epoll_wiat timeout (%d)\n" , cnt);
             cnt++;
             continue;
         }
@@ -338,7 +353,7 @@ int emulAction(char *src_addr, int src_port, char *dest_addr, int dest_port,
         nRet = srt_recvmsg(sock, buffer + pos , totalSize);
 
         if (nRet == SRT_ERROR) {
-            printf("failed to receive : [%d][%s]\n", srt_getlasterror(NULL), srt_getlasterror_str());
+            fprintf(stderr, "failed to receive : [%d][%s]\n", srt_getlasterror(NULL), srt_getlasterror_str());
             srt_epoll_remove_usock(pollid, sock);
             srt_epoll_release(pollid);
             srt_close(sock);
@@ -359,7 +374,7 @@ int emulAction(char *src_addr, int src_port, char *dest_addr, int dest_port,
 
     if (isServer) {
         srt_sendmsg(sock, (char *)&totalSize , sizeof(totalSize) , -1, 1);
-        printf("Send size : %d\n", totalSize);
+        fprintf(stderr, "Send size : %d\n", totalSize);
 
         nRet = totalSize;
 
@@ -378,7 +393,7 @@ int emulAction(char *src_addr, int src_port, char *dest_addr, int dest_port,
 #endif
 
         if (srt_epoll_wait(pollid, &rfd , &rfdlen, 0, 0, 10 * 1000, 0, 0, 0, 0) < 0) {
-            printf("srt_epoll_wiat timeout (%d)\n" , cnt);
+            fprintf(stderr, "srt_epoll_wiat timeout (%d)\n" , cnt);
             cnt++;
         }
     }
@@ -389,4 +404,5 @@ int emulAction(char *src_addr, int src_port, char *dest_addr, int dest_port,
 
     srt_close(sock);
 
+    return 0;
 }
