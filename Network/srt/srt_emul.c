@@ -19,6 +19,7 @@ int readData(char* filename, char* buffer);
 SRTSOCKET connectSRT(char *src_addr, int src_port, char *dest_addr, int dest_port, bool isRendezvous, bool isServer);
 int createEPoll(SRTSOCKET sock);
 int emulAction(char *src_addr, int src_port, char *dest_addr, int dest_port, char *buffer, int nLength, bool isRendezvous, bool isServer);
+int getCurrentTime(void);
 
 int main(int argc , char *argv[]) 
 {
@@ -317,6 +318,7 @@ int emulAction(char *src_addr, int src_port, char *dest_addr, int dest_port,
 
     }
 
+    int startTime = getCurrentTime();
     logPrn("Receiving size : %d\n" , totalSize);
     /// receive the size 
     while (srt_epoll_wait(pollid, &rfd , &rfdlen, 0, 0, 100, 0, 0, 0, 0) < 0) {
@@ -338,6 +340,12 @@ int emulAction(char *src_addr, int src_port, char *dest_addr, int dest_port,
         srt_cleanup(); 
         return -1;
     }
+
+    int currentTime = getCurrentTime();
+
+    logPrn("[TimeChekc]Receive Size : %d" , currentTime - startTime);
+
+    startTime = currentTime;
 
     logPrn("Receive size : %d\n" , totalSize);
 
@@ -368,7 +376,11 @@ int emulAction(char *src_addr, int src_port, char *dest_addr, int dest_port,
 
         totalSize -= nRet;
         pos += nRet;
-    } 
+    }
+
+    currentTime = getCurrentTime();
+
+    logPrn("[TimeChekc]Receive Data : %d" , currentTime - startTime);
 
     /// send the size
     totalSize = pos;
@@ -407,4 +419,11 @@ int emulAction(char *src_addr, int src_port, char *dest_addr, int dest_port,
     srt_close(sock);
 
     return 0;
+}
+
+int getCurrentTime(void)
+{
+    struct timeval tp;
+    int nRet = gettimeofday(&tp, NULL);
+    return (tp.tv_sec * 1000 + tp.tv_usec / 1000);
 }
