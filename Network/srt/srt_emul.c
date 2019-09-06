@@ -226,6 +226,7 @@ SRTSOCKET connectSRT(char *src_addr, int src_port, char *dest_addr, int dest_por
         }
     }
 
+    /*
     int nLength = 10;
     srt_sendmsg(sock, (char *)&nLength , sizeof(nLength) , -1, 1);
     nRet = srt_recvmsg(sock, (char *)&nLength, sizeof(nLength));
@@ -236,6 +237,7 @@ SRTSOCKET connectSRT(char *src_addr, int src_port, char *dest_addr, int dest_por
         srt_cleanup(); 
     }
     logPrn("fisrt negotiation end");
+    */
 
     return sock;
 
