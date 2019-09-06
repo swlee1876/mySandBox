@@ -323,6 +323,15 @@ int emulAction(char *src_addr, int src_port, char *dest_addr, int dest_port,
         srt_sendmsg(sock, (char *)&nLength , sizeof(nLength) , -1, 1);
         fprintf(stderr, "Send size : %d\n", nLength);
 
+        while (srt_epoll_wait(pollid, &rfd , &rfdlen, 0, 0, 100, 0, 0, 0, 0) < 0) {
+            fprintf(stderr, "first step : srt_epoll_wiat error (%d)\n" , srt_getlasterror(NULL));
+            continue;
+        }
+        
+        logPrn("epoll check done : %d\n" , srt_getlasterror(NULL));
+
+        nRet = srt_recvmsg(sock, (char *)&totalSize , sizeof(totalSize));
+
         /// send the data
 #if 0
         while(nRet > 0) {
@@ -373,6 +382,9 @@ int emulAction(char *src_addr, int src_port, char *dest_addr, int dest_port,
 
     logPrn("Receive size : %d\n" , totalSize);
 
+    srt_sendmsg(sock, (char *)&nLength , sizeof(nLength) , -1, 1);
+    fprintf(stderr, "Send size : %d\n", nLength);
+
     pbuffer = (char *)malloc(totalSize);
     memset(pbuffer, 0x00, totalSize);
 
@@ -414,6 +426,15 @@ int emulAction(char *src_addr, int src_port, char *dest_addr, int dest_port,
     if (isServer) {
         srt_sendmsg(sock, (char *)&totalSize , sizeof(totalSize) , -1, 1);
         fprintf(stderr, "Send size : %d\n", totalSize);
+
+        while (srt_epoll_wait(pollid, &rfd , &rfdlen, 0, 0, 100, 0, 0, 0, 0) < 0) {
+            fprintf(stderr, "first step : srt_epoll_wiat error (%d)\n" , srt_getlasterror(NULL));
+            continue;
+        }
+        
+        logPrn("epoll check done : %d\n" , srt_getlasterror(NULL));
+
+        nRet = srt_recvmsg(sock, (char *)&nLength , sizeof(nLength));
 
         nRet = totalSize;
 
