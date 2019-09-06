@@ -296,11 +296,14 @@ int emulAction(char *src_addr, int src_port, char *dest_addr, int dest_port,
     SRTSOCKET sock, rfd;
     int rfdlen = 1, cnt = 0, totalSize = 0, argcPos = 1;
 
+    srt_clearlasterror();
+
     sock = connectSRT(src_addr, src_port, dest_addr, dest_port, isRendezvous, isServer);
     if (sock == SRT_ERROR) {
         return -1;
     }
     logPrn("Sueccess : connect");
+    fprintf(stderr, "Connect Status:Error (%d:%d)\n" , srt_getsockstate(sock), srt_getlasterror(NULL));
 
     int pollid = createEPoll(sock);
     if (pollid == SRT_ERROR) {
@@ -334,7 +337,7 @@ int emulAction(char *src_addr, int src_port, char *dest_addr, int dest_port,
     logPrn("Receiving size : %d\n" , totalSize);
     /// receive the size 
     while (srt_epoll_wait(pollid, &rfd , &rfdlen, 0, 0, 100, 0, 0, 0, 0) < 0) {
-        fprintf(stderr, "first step : srt_epoll_wiat timeout (%d)\n" , cnt);
+        fprintf(stderr, "first step : srt_epoll_wiat error (%d)\n" , srt_getlasterror(NULL));
         if (isServer) {
             logPrn("Pick slow connection and close socket\n");
             srt_close(sock);
@@ -367,6 +370,7 @@ int emulAction(char *src_addr, int src_port, char *dest_addr, int dest_port,
     /// receive the data
     while((totalSize > 0) && (cnt < 50)) {
         if (srt_epoll_wait(pollid, &rfd , &rfdlen, 0, 0, READ_TIMEOUT, 0, 0, 0, 0) < 0) {
+            fprintf(stderr, "srt_epoll_wiat error (%d)\n" , srt_getlasterror(NULL));
             fprintf(stderr, "srt_epoll_wiat timeout (%d)\n" , cnt);
             cnt++;
             continue;
