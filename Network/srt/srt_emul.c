@@ -194,8 +194,7 @@ SRTSOCKET connectSRT(char *src_addr, int src_port, char *dest_addr, int dest_por
 
         srt_close(sock);
 
-        return clisock;
-
+        sock = clisock;
     }
     else {
         /// set destination ip and port
