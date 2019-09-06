@@ -346,6 +346,7 @@ int emulAction(char *src_addr, int src_port, char *dest_addr, int dest_port,
         continue;
     }
     
+    logPrn("epoll check done : %d\n" , srt_getlasterror(NULL));
 
     nRet = srt_recvmsg(sock, (char *)&totalSize , sizeof(totalSize));
 
