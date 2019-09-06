@@ -71,6 +71,7 @@ int main(int argc , char *argv[])
             break;
         cnt++;
         sleep(2);
+        srt_cleanup(); 
     }
 
     srt_cleanup(); 
