@@ -134,6 +134,7 @@ SRTSOCKET connectSRT(char *src_addr, int src_port, char *dest_addr, int dest_por
     int file_mode = SRTT_FILE;
     int yes = 1;
     SRTSOCKET sock, clisock;
+    int bufferSize = 1024 * 1024;
 
     fprintf(stderr, "connecting [%s:%s] mode\n" ,
             isRendezvous?"rendezvous":"normal", isServer?"server":"client");
@@ -150,6 +151,8 @@ SRTSOCKET connectSRT(char *src_addr, int src_port, char *dest_addr, int dest_por
     struct linger zero;
     memset((char *)&zero, 0x00, sizeof(zero));
     srt_setsockopt(sock, 0, SRTO_LINGER, &zero, sizeof(zero));
+
+    srt_setsockopt(sock, 0, SRTO_UDP_SNDBUF, &bufferSize, sizeof(bufferSize));
 
     /// set source ip and port
 	struct sockaddr_in	this_sin;
