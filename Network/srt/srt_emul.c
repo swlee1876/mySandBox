@@ -344,11 +344,13 @@ int emulAction(char *src_addr, int src_port, char *dest_addr, int dest_port,
     /// receive the size 
     while (srt_epoll_wait(pollid, &rfd , &rfdlen, 0, 0, 100, 0, 0, 0, 0) < 0) {
         fprintf(stderr, "first step : srt_epoll_wiat error (%d)\n" , srt_getlasterror(NULL));
+        /*
         if (isServer) {
             logPrn("Pick slow connection and close socket\n");
             srt_close(sock);
             return -2;
         }
+        */
         continue;
     }
     
